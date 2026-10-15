@@ -1,0 +1,796 @@
+{
+  "info": {
+    "_postman_id": "692274c7-9fd7-4328-a0d7-b6378718541e",
+    "name": "Hub de Leitura - Testes API EBAC",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Collection de testes funcionais da API Hub de Leitura, com foco no Catálogo de Livros. Antes de executar, configure o ambiente ServerRest com base_Url_Hub=http://localhost:3000, adminToken vazio e bookId vazio. Execute a collection na ordem definida: Login, Adicionar, Buscar, Atualizar e Excluir. A requisição de criação salva bookId; o login admin salva adminToken."
+  },
+  "item": [
+    {
+      "name": "Login",
+      "item": [
+        {
+          "name": "login admin",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "",
+                  "pm.test(\"Login admin deve retornar 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Resposta deve conter token\", function () {",
+                  "    pm.expect(json.token).to.be.a(\"string\").and.not.empty;",
+                  "});",
+                  "",
+                  "pm.test(\"Resposta deve identificar o perfil administrador\", function () {",
+                  "    pm.expect(json.isAdmin).to.eql(true);",
+                  "});",
+                  "",
+                  "pm.environment.set(\"adminToken\", json.token.replace(/^Bearer\\s+/i, \"\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@biblioteca.com\",\n  \"password\": \"admin123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_Url_Hub}}/api/login",
+              "host": [
+                "{{base_Url_Hub}}"
+              ],
+              "path": [
+                "api",
+                "login"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "login usuário comum",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "",
+                  "pm.test(\"Login de usuário comum deve retornar 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Login deve retornar token\", function () {",
+                  "    pm.expect(json.token).to.be.a(\"string\").and.not.empty;",
+                  "});",
+                  "",
+                  "pm.test(\"Token deve ter formato JWT\", function () {",
+                  "    const token = json.token.replace(/^Bearer\\s+/i, \"\");",
+                  "    pm.expect(token.split(\".\")).to.have.lengthOf(3);",
+                  "});",
+                  "",
+                  "pm.test(\"Usuário comum não deve ser administrador\", function () {",
+                  "    pm.expect(json.isAdmin).to.eql(false);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"usuario@teste.com\",\n  \"password\": \"user123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_Url_Hub}}/api/login",
+              "host": [
+                "{{base_Url_Hub}}"
+              ],
+              "path": [
+                "api",
+                "login"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "login com usuário inexistente",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Login com usuário inexistente deve retornar 401\", function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});",
+                  "",
+                  "const json = pm.response.json();",
+                  "",
+                  "pm.test(\"API deve retornar mensagem de erro\", function () {",
+                  "    pm.expect(json.message).to.be.a(\"string\").and.not.empty;",
+                  "});",
+                  "",
+                  "pm.test(\"Resposta não deve conter token\", function () {",
+                  "    pm.expect(json.token).to.be.undefined;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"inexistente@email.com\",\n  \"password\": \"senhaerrada\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_Url_Hub}}/api/login",
+              "host": [
+                "{{base_Url_Hub}}"
+              ],
+              "path": [
+                "api",
+                "login"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Adicionar",
+      "item": [
+        {
+          "name": "adicionar novo livro",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "",
+                  "pm.test(\"Status code deve ser 201\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test(\"Mensagem deve confirmar a criação\", function () {",
+                  "    pm.expect(json.message).to.eql(\"Livro criado com sucesso.\");",
+                  "});",
+                  "",
+                  "pm.test(\"Livro criado deve possuir ID numérico\", function () {",
+                  "    pm.expect(json.book.id).to.be.a(\"number\");",
+                  "});",
+                  "",
+                  "pm.test(\"Título retornado deve corresponder ao Body\", function () {",
+                  "    pm.expect(json.book.title).to.eql(\"Fronteira Digital\");",
+                  "});",
+                  "",
+                  "pm.test(\"Autor retornado deve corresponder ao Body\", function () {",
+                  "    pm.expect(json.book.author).to.eql(\"Lucas Oliveira\");",
+                  "});",
+                  "",
+                  "pm.test(\"Categoria retornada deve corresponder ao Body\", function () {",
+                  "    pm.expect(json.book.category).to.eql(\"Ficção Científica\");",
+                  "});",
+                  "",
+                  "pm.test(\"ISBN retornado deve corresponder ao Body\", function () {",
+                  "    pm.expect(json.book.isbn).to.eql(\"9780000000258\");",
+                  "});",
+                  "",
+                  "if (json.book && json.book.id) {",
+                  "    pm.environment.set(\"bookId\", json.book.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Fronteira Digital\",\n  \"author\": \"Lucas Oliveira\",\n  \"description\": \"Uma aventura fictícia sobre inteligência artificial e mundos virtuais.\",\n  \"category\": \"Ficção Científica\",\n  \"isbn\": \"9780000000258\",\n  \"editor\": \"Editora Futuro\",\n  \"language\": \"Português\",\n  \"publication_year\": 2026,\n  \"pages\": 240,\n  \"format\": \"Físico\",\n  \"total_copies\": 5,\n  \"available_copies\": 5\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_Url_Hub}}/api/books",
+              "host": [
+                "{{base_Url_Hub}}"
+              ],
+              "path": [
+                "api",
+                "books"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "adicionar livro inválido",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code deve ser 400\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "const json = pm.response.json();",
+                  "",
+                  "pm.test(\"API deve informar erro de validação\", function () {",
+                  "    pm.expect(json.message).to.be.a(\"string\").and.not.empty;",
+                  "});",
+                  "",
+                  "pm.test(\"Campo obrigatório ausente deve ser author\", function () {",
+                  "    pm.expect(json.field).to.eql(\"author\");",
+                  "});",
+                  "",
+                  "pm.test(\"Body de teste deve conter o título esperado\", function () {",
+                  "    pm.expect(JSON.parse(pm.request.body.raw).title).to.eql(\"O Código do Universo Perdido\");",
+                  "});",
+                  "",
+                  "pm.test(\"Body de teste deve conter a categoria esperada\", function () {",
+                  "    pm.expect(JSON.parse(pm.request.body.raw).category).to.eql(\"Ficção Científica\");",
+                  "});",
+                  "",
+                  "pm.test(\"Body de teste deve conter o ISBN esperado\", function () {",
+                  "    pm.expect(JSON.parse(pm.request.body.raw).isbn).to.eql(\"9780000000111\");",
+                  "});",
+                  "",
+                  "pm.test(\"Body de teste deve conter a editora esperada\", function () {",
+                  "    pm.expect(JSON.parse(pm.request.body.raw).editor).to.eql(\"Editora Nebulosa\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"O Código do Universo Perdido\",\n  \"description\": \"Uma aventura fictícia entre mundos digitais.\",\n  \"category\": \"Ficção Científica\",\n  \"isbn\": \"9780000000111\",\n  \"editor\": \"Editora Nebulosa\",\n  \"language\": \"Português\",\n  \"publication_year\": 2025,\n  \"pages\": 280,\n  \"format\": \"Físico\",\n  \"total_copies\": 5,\n  \"available_copies\": 5\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_Url_Hub}}/api/books",
+              "host": [
+                "{{base_Url_Hub}}"
+              ],
+              "path": [
+                "api",
+                "books"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Buscar",
+      "item": [
+        {
+          "name": "buscar livros",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code deve ser 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const json = pm.response.json();",
+                  "",
+                  "pm.test(\"Resposta deve conter uma lista de livros\", function () {",
+                  "    pm.expect(json.books).to.be.an(\"array\");",
+                  "});",
+                  "",
+                  "pm.test(\"Resposta deve conter informações de paginação\", function () {",
+                  "    pm.expect(json.pagination).to.exist;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_Url_Hub}}/api/books",
+              "host": [
+                "{{base_Url_Hub}}"
+              ],
+              "path": [
+                "api",
+                "books"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "buscar livro por ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code deve ser 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const json = pm.response.json();",
+                  "const expectedId = Number(pm.environment.get(\"bookId\"));",
+                  "",
+                  "pm.test(\"Resposta deve conter um livro\", function () {",
+                  "    pm.expect(json.book).to.be.an(\"object\");",
+                  "});",
+                  "",
+                  "pm.test(\"ID retornado deve corresponder ao livro criado\", function () {",
+                  "    pm.expect(json.book.id).to.eql(expectedId);",
+                  "});",
+                  "",
+                  "pm.test(\"Título deve corresponder ao livro criado\", function () {",
+                  "    pm.expect(json.book.title).to.eql(\"Fronteira Digital\");",
+                  "});",
+                  "",
+                  "pm.test(\"Autor deve corresponder ao livro criado\", function () {",
+                  "    pm.expect(json.book.author).to.eql(\"Lucas Oliveira\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_Url_Hub}}/api/books/{{bookId}}",
+              "host": [
+                "{{base_Url_Hub}}"
+              ],
+              "path": [
+                "api",
+                "books",
+                "{{bookId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "buscar livro inexistente",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code deve ser 404\", function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});",
+                  "",
+                  "const json = pm.response.json();",
+                  "",
+                  "pm.test(\"Mensagem deve informar que o livro não foi encontrado\", function () {",
+                  "    pm.expect(json.message).to.include(\"Livro não encontrado\");",
+                  "});",
+                  "",
+                  "pm.test(\"ID inexistente deve ser retornado\", function () {",
+                  "    pm.expect(json.bookId).to.eql(999999);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_Url_Hub}}/api/books/999999",
+              "host": [
+                "{{base_Url_Hub}}"
+              ],
+              "path": [
+                "api",
+                "books",
+                "999999"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Atualizar",
+      "item": [
+        {
+          "name": "atualizar um livro existente",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "const expectedId = Number(pm.environment.get(\"bookId\"));",
+                  "",
+                  "pm.test(\"Status code deve ser 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Mensagem deve confirmar a atualização\", function () {",
+                  "    pm.expect(json.message).to.eql(\"Livro atualizado com sucesso.\");",
+                  "});",
+                  "",
+                  "pm.test(\"ID atualizado deve corresponder ao livro criado\", function () {",
+                  "    pm.expect(json.bookId).to.eql(expectedId);",
+                  "});",
+                  "",
+                  "pm.test(\"Resposta deve informar os campos atualizados\", function () {",
+                  "    pm.expect(json.updatedFields).to.exist;",
+                  "});",
+                  "",
+                  "pm.test(\"Título anterior deve ser o título criado\", function () {",
+                  "    pm.expect(json.previousTitle).to.eql(\"Fronteira Digital\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Fronteira Digital - Edição Revisada\",\n  \"author\": \"Lucas Oliveira\",\n  \"description\": \"Edição revisada com novos conteúdos sobre inteligência artificial e mundos virtuais.\",\n  \"category\": \"Ficção Científica\",\n  \"isbn\": \"9780000000258\",\n  \"editor\": \"Editora Futuro\",\n  \"language\": \"Português\",\n  \"publication_year\": 2026,\n  \"pages\": 260,\n  \"format\": \"Físico\",\n  \"total_copies\": 5,\n  \"available_copies\": 5\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_Url_Hub}}/api/books/{{bookId}}",
+              "host": [
+                "{{base_Url_Hub}}"
+              ],
+              "path": [
+                "api",
+                "books",
+                "{{bookId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "verificar livro atualizado",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code deve ser 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const json = pm.response.json();",
+                  "const expectedId = Number(pm.environment.get(\"bookId\"));",
+                  "",
+                  "pm.test(\"ID deve corresponder ao livro atualizado\", function () {",
+                  "    pm.expect(json.book.id).to.eql(expectedId);",
+                  "});",
+                  "",
+                  "pm.test(\"Título atualizado deve persistir\", function () {",
+                  "    pm.expect(json.book.title).to.eql(\"Fronteira Digital - Edição Revisada\");",
+                  "});",
+                  "",
+                  "pm.test(\"Número de páginas atualizado deve persistir\", function () {",
+                  "    pm.expect(json.book.pages).to.eql(260);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_Url_Hub}}/api/books/{{bookId}}",
+              "host": [
+                "{{base_Url_Hub}}"
+              ],
+              "path": [
+                "api",
+                "books",
+                "{{bookId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "atualizar livro inexistente",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code deve ser 404\", function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});",
+                  "",
+                  "const json = pm.response.json();",
+                  "",
+                  "pm.test(\"Mensagem deve informar que o livro não foi encontrado\", function () {",
+                  "    pm.expect(json.message).to.include(\"Livro não encontrado\");",
+                  "});",
+                  "",
+                  "pm.test(\"Resposta deve identificar o ID inexistente\", function () {",
+                  "    pm.expect(json.bookId).to.eql(999999);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Fronteira Digital - Edição Revisada\",\n  \"author\": \"Lucas Oliveira\",\n  \"description\": \"Edição revisada com novos conteúdos sobre inteligência artificial e mundos virtuais.\",\n  \"category\": \"Ficção Científica\",\n  \"isbn\": \"9780000000258\",\n  \"editor\": \"Editora Futuro\",\n  \"language\": \"Português\",\n  \"publication_year\": 2026,\n  \"pages\": 260,\n  \"format\": \"Físico\",\n  \"total_copies\": 5,\n  \"available_copies\": 5\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_Url_Hub}}/api/books/999999",
+              "host": [
+                "{{base_Url_Hub}}"
+              ],
+              "path": [
+                "api",
+                "books",
+                "999999"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Excluir",
+      "item": [
+        {
+          "name": "excluir livro",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "const expectedId = Number(pm.environment.get(\"bookId\"));",
+                  "",
+                  "pm.test(\"Status code deve ser 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Mensagem deve confirmar a exclusão\", function () {",
+                  "    pm.expect(json.message).to.eql(\"Livro deletado com sucesso.\");",
+                  "});",
+                  "",
+                  "pm.test(\"Resposta deve conter deletedBook\", function () {",
+                  "    pm.expect(json.deletedBook).to.be.an(\"object\");",
+                  "});",
+                  "",
+                  "pm.test(\"ID do livro excluído deve corresponder ao criado\", function () {",
+                  "    pm.expect(json.deletedBook.id).to.eql(expectedId);",
+                  "});",
+                  "",
+                  "pm.test(\"Título excluído deve corresponder à atualização\", function () {",
+                  "    pm.expect(json.deletedBook.title).to.eql(\"Fronteira Digital - Edição Revisada\");",
+                  "});",
+                  "",
+                  "pm.test(\"Autor excluído deve corresponder ao cadastro\", function () {",
+                  "    pm.expect(json.deletedBook.author).to.eql(\"Lucas Oliveira\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_Url_Hub}}/api/books/{{bookId}}",
+              "host": [
+                "{{base_Url_Hub}}"
+              ],
+              "path": [
+                "api",
+                "books",
+                "{{bookId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "excluir livro inexistente",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code deve ser 404\", function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});",
+                  "",
+                  "const json = pm.response.json();",
+                  "",
+                  "pm.test(\"Mensagem deve informar que o livro não foi encontrado\", function () {",
+                  "    pm.expect(json.message).to.eql(\"Livro não encontrado.\");",
+                  "});",
+                  "",
+                  "pm.test(\"Mensagem de erro deve ser uma string não vazia\", function () {",
+                  "    pm.expect(json.message).to.be.a(\"string\").and.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_Url_Hub}}/api/books/999999",
+              "host": [
+                "{{base_Url_Hub}}"
+              ],
+              "path": [
+                "api",
+                "books",
+                "999999"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}
